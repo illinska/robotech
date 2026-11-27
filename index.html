@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<html lang="uk" data-theme="graphite">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MEDSTORY // Оглядовий брифінг та інтерактивна візуальна новела</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Unbounded:wght@600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================================
+       1. ДВІ БЛАГОРОДНІ ПАЛІТРИ: «КЛІНІЧНИЙ ГРАФІТ» ТА «ТЕПЛИЙ ПАПІР»
+       ========================================================================= */
+    :root,
+    [data-theme="graphite"] {
+      --bg: #0f1318;
+      --surface: rgba(21, 27, 34, 0.9);
+      --surface-solid: #161c24;
+      --card: rgba(28, 36, 46, 0.85);
+      --ink: #f2f5f9;
+      --muted: #98a4b3;
+      --accent: #10b981;
+      --accent-soft: rgba(16, 185, 129, 0.14);
+      --accent-2: #38bdf8;
+      --warn: #f59e0b;
+      --border: rgba(242, 245, 249, 0.11);
+      --backdrop-grad: linear-gradient(180deg, rgba(15, 19, 24, 0.62) 0%, rgba(15, 19, 24, 0.9) 62%, #0f1318 100%);
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.48);
+    }
+
+    [data-theme="paper"] {
+      --bg: #f5f1ea;
+      --surface: rgba(255, 252, 247, 0.92);
+      --surface-solid: #fffcf7;
+      --card: rgba(244, 238, 228, 0.9);
+      --ink: #1e1b18;
+      --muted: #5c5349;
+      --accent: #b85032;
+      --accent-soft: rgba(184, 80, 50, 0.12);
+      --accent-2: #2c6e58;
+      --warn: #b4691e;
+      --border: rgba(30, 27, 24, 0.12);
+      --backdrop-grad: linear-gradient(180deg, rgba(245, 241, 234, 0.5) 0%, rgba(245, 241, 234, 0.92) 60%, #f5f1ea 100%);
+      --shadow: 0 24px 55px rgba(30, 27, 24, 0.1);
+    }
+
+    /* =========================================================================
+       2. БАЗОВІ СТИЛІ ТА РЕЖИМИ ПЕРЕГЛЯДУ (BRIEFING HUB VS VISUAL NOVEL)
+       ========================================================================= */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      transition: background-color 0.35s ease, color 0.35s ease;
+    }
+
+    body.vn-lock {
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    h1, h2, .display-unbounded {
+      font-family: 'Unbounded', 'Plus Jakarta Sans', sans-serif;
+      letter-spacing: -0.02em;
+    }
+
+    h3, .display {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      letter-spacing: -0.02em;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Фонова сцена (фотографія + кінематографічне тонування) */
+    .scene-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .scene-backdrop img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.03);
+      transition: opacity 0.55s ease, transform 6s ease;
+      filter: saturate(0.92);
+    }
+
+    .scene-backdrop::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--backdrop-grad);
+      transition: background 0.35s ease;
+    }
+
+    /* =========================================================================
+       3. ВЕРХНІЙ HUD (НАВІГАЦІЯ, КНОПКА «← НА ГОЛОВНУ», ТЕМА, ДЖЕРЕЛА)
+       ========================================================================= */
+    .vn-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .vn-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      padding: 9px 16px;
+      border-radius: 999px;
+      font-family: 'Unbounded', sans-serif;
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+      color: var(--ink);
+      transition: border-color 0.2s ease;
+    }
+
+    .vn-brand:hover {
+      border-color: var(--accent);
+    }
+
+    .back-hub-btn {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 8px 15px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .back-hub-btn.visible {
+      display: inline-flex;
+    }
+
+    .back-hub-btn:hover {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    [data-theme="graphite"] .back-hub-btn:hover {
+      color: #0f1318;
+    }
+
+    .rec-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-soft);
+      flex-shrink: 0;
+    }
+
+    /* Шкала прогресу сцен (видима під час проходження сценарію) */
+    .progress-bar-wrap {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 999px;
+    }
+
+    .progress-bar-wrap.visible {
+      display: inline-flex;
+    }
+
+    .step-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .step-dot {
+      width: 24px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--border);
+      transition: background-color 0.3s ease, width 0.3s ease;
+    }
+
+    .step-dot.done {
+      background: var(--accent-2);
+    }
+
+    .step-dot.current {
+      background: var(--accent);
+      width: 34px;
+    }
+
+    .hud-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hud-pill {
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      color: var(--ink);
+      padding: 9px 15px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .hud-pill:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* =========================================================================
+       4. ЕКРАН 0: ГОЛОВНА ОГЛЯДОВА СТОРІНКА-БРИФІНГ (EDITORIAL BENTO HUB)
+       ========================================================================= */
+    .screen {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      max-width: 1240px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 28px 32px;
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    .hub-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding-top: 8px;
+    }
+
+    /* Головна плакатна обкладинка брифінгу */
+    .hub-hero-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 0.95fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .hub-lead-card {
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 34px 36px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 22px;
+    }
+
+    .hub-lead-card h1 {
+      font-size: clamp(1.75rem, 3.2vw, 2.75rem);
+      line-height: 1.14;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .hub-lead-card p {
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.65;
+      max-width: 58ch;
+    }
+
+    .hub-cta-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-portal {
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      padding: 14px 24px;
+      border-radius: 999px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.94rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 12px 30px var(--accent-soft);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    [data-theme="graphite"] .btn-portal {
+      color: #0f1318;
+    }
+
+    .btn-portal:hover {
+      transform: translateY(-2px);
+    }
+
+    /* Блок «Шкала точності та ефективності» */
+    .scale-card {
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 28px 30px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .scale-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .scale-header h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .scale-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .scale-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .scale-track {
+      height: 10px;
+      border-radius: 999px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .scale-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    }
+
+    .scale-kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .kpi-mini span {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .kpi-mini strong {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 1.05rem;
+      color: var(--accent);
+    }
+
+    /* Секція 4 напрямів медичної робототехніки (Editorial Strip) */
+    .directions-bento {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .dir-tile {
+      background: var(--surface);
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .dir-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-soft);
+      width: fit-content;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    .dir-tile h3 {
+      font-size: 1.04rem;
+      font-weight: 700;
+    }
+
+    .dir-tile p {
+      font-size: 0.83rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    /* Довідник 4 ключових інженерних систем з фото */
+    .systems-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .sys-bento-card {
+      background: var(--surface);
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sys-bento-card img {
+      width: 100%;
+      height: 132px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .sys-bento-body {
+      padding: 16px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .sys-bento-body .mono {
+      font-size: 0.7rem;
+      color: var(--accent-2);
+      font-weight: 600;
+    }
+
+    .sys-bento-body h3 {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .sys-bento-body p {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* Великий портал швидкого запуску сценаріїв новели */
+    .portal-banner {
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border: 1.5px solid var(--accent);
+      border-radius: 28px;
+      padding: 26px 30px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .portal-banner-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .portal-banner-head h2 {
+      font-size: clamp(1.2rem, 2.2vw, 1.65rem);
+    }
+
+    .portal-quick-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .quick-scen-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px 18px;
+      text-align: left;
+      color: var(--ink);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .quick-scen-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      transform: translateY(-3px);
+    }
+
+    .quick-scen-btn strong {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.96rem;
+      font-weight: 700;
+      display: block;
+    }
+
+    .quick-scen-btn span.desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .quick-scen-go {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 6px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* =========================================================================
+       5. ЕКРАН 1: СТАРТОВИЙ ВИБІР ОДНІЄЇ З 3 КЛІНІЧНИХ ІСТОРІЙ НОВЕЛИ
+       ========================================================================= */
+    .start-hero {
+      max-width: 760px;
+      margin-top: auto;
+      margin-bottom: 24px;
+    }
+
+    .kicker {
+      display: inline-block;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid var(--border);
+      padding: 5px 13px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .start-hero h1 {
+      font-size: clamp(1.85rem, 3.5vw, 2.85rem);
+      font-weight: 800;
+      line-height: 1.12;
+      margin-bottom: 12px;
+    }
+
+    .start-hero p {
+      color: var(--muted);
+      font-size: 0.98rem;
+      max-width: 60ch;
+    }
+
+    .stories-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .story-choice {
+      background: var(--surface);
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+      cursor: pointer;
+      text-align: left;
+      color: var(--ink);
+      box-shadow: var(--shadow);
+      transition: transform 0.22s ease, border-color 0.22s ease;
+    }
+
+    .story-choice:hover {
+      transform: translateY(-5px);
+      border-color: var(--accent);
+    }
+
+    .story-thumb {
+      width: 100%;
+      height: 128px;
+      border-radius: 14px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .story-code {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .story-choice h3 {
+      font-size: 1.12rem;
+      line-height: 1.25;
+      margin-bottom: 6px;
+    }
+
+    .story-choice p {
+      font-size: 0.83rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .story-start-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .author-footer-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-top: 12px;
+    }
+
+    .author-signature {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: var(--surface);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      padding: 9px 17px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    /* =========================================================================
+       6. ЕКРАН 2: ІГРОВА СЦЕНА ВІЗУАЛЬНОЇ НОВЕЛИ (КАДР + ТЕЛЕМЕТРІЯ + ДІАЛОГ)
+       ========================================================================= */
+    .vn-stage-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 22px;
+      align-items: end;
+      padding-bottom: 10px;
+    }
+
+    .telemetry-panel {
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .tel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    .tel-metric {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .tel-metric span {
+      display: block;
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    .tel-metric strong {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.18rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .science-note-box {
+      background: var(--accent-soft);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: var(--ink);
+    }
+
+    .science-note-box strong {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .dialogue-box {
+      background: var(--surface);
+      backdrop-filter: blur(22px);
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      padding: 26px 28px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .speaker-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .speaker-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: #ffffff;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    [data-theme="graphite"] .speaker-tag {
+      color: #0f1318;
+    }
+
+    .scene-location {
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+
+    .dialogue-text {
+      font-size: 1.02rem;
+      line-height: 1.65;
+      min-height: 76px;
+      cursor: pointer;
+      color: var(--ink);
+    }
+
+    .consequence-banner {
+      display: none;
+      background: var(--card);
+      border-left: 3px solid var(--accent-2);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.86rem;
+      line-height: 1.55;
+      color: var(--ink);
+    }
+
+    .consequence-banner.visible {
+      display: block;
+      animation: fadeSlide 0.25s ease;
+    }
+
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .choices-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .choice-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--ink);
+      border-radius: 15px;
+      padding: 13px 16px;
+      text-align: left;
+      font-family: inherit;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      transition: all 0.2s ease;
+    }
+
+    .choice-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      transform: translateY(-2px);
+    }
+
+    .choice-key {
+      background: var(--accent);
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    [data-theme="graphite"] .choice-key {
+      color: #0f1318;
+    }
+
+    /* =========================================================================
+       7. ЕКРАН 3: ПІДСУМКОВА КАРТКА РЕЗУЛЬТАТІВ ОПЕРАЦІЇ / РЕАБІЛІТАЦІЇ
+       ========================================================================= */
+    .summary-wrap {
+      margin: auto;
+      max-width: 860px;
+      width: 100%;
+      background: var(--surface);
+      backdrop-filter: blur(22px);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 32px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .sum-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .sum-box span {
+      display: block;
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .sum-box strong {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .summary-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      padding: 11px 20px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    [data-theme="graphite"] .btn-primary {
+      color: #0f1318;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+    }
+
+    /* =========================================================================
+       8. МОДАЛЬНЕ ВІКНО НАУКОВИХ ДЖЕРЕЛ ТА АДАПТИВНІСТЬ
+       ========================================================================= */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(10, 14, 20, 0.72);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: var(--surface-solid);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      max-width: 600px;
+      width: 100%;
+      padding: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .modal-box h3 {
+      font-size: 1.35rem;
+      margin-bottom: 14px;
+    }
+
+    .modal-box ul {
+      list-style: none;
+      display: grid;
+      gap: 12px;
+      font-size: 0.9rem;
+      margin-bottom: 22px;
+    }
+
+    .modal-box a {
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .modal-box a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 1040px) {
+      .hub-hero-grid,
+      .directions-bento,
+      .systems-strip {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 820px) {
+      body.vn-lock {
+        height: auto;
+        overflow-y: auto;
+      }
+
+      .hub-hero-grid,
+      .directions-bento,
+      .systems-strip,
+      .portal-quick-grid,
+      .stories-row,
+      .vn-stage-grid,
+      .summary-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .dialogue-text {
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ФОНОВИЙ КІНЕМАТОГРАФІЧНИЙ КАДР СЦЕНИ -->
+  <div class="scene-backdrop">
+    <img
+      id="backdrop-img"
+      src="https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=1500&q=85"
+      onerror="this.src='https://placehold.co/1400x900/161c24/10b981?text=MEDSTORY+CLINICAL+BRIEFING'"
+      alt="Клінічна сцена медичної робототехніки"
+    />
+  </div>
+
+  <!-- ВЕРХНЯ ПАНЕЛЬ НАВІГАЦІЇ ТА КЕРУВАННЯ -->
+  <header class="vn-topbar">
+    <div class="topbar-left">
+      <button class="vn-brand" onclick="goHub()" title="На головну оглядову сторінку">
+        <span class="rec-dot"></span>
+        MEDSTORY // ОГЛЯД І НОВЕЛА
+      </button>
+
+      <button class="back-hub-btn" id="back-hub-btn" onclick="goHub()">
+        ← На головну
+      </button>
+    </div>
+
+    <!-- Шкала прогресу сцен (активна під час проходження сценарію) -->
+    <div class="progress-bar-wrap" id="progress-wrap">
+      <span class="mono" style="font-size:0.74rem; color:var(--muted);" id="step-counter">КАДР 1 / 4</span>
+      <div class="step-dots" id="step-dots"></div>
+    </div>
+
+    <div class="hud-controls">
+      <button class="hud-pill" id="theme-toggle-btn" onclick="toggleTheme()">
+        🎨 Палітра: Клінічний графіт
+      </button>
+      <button class="hud-pill" onclick="toggleSources(true)">
+        📚 Джерела
+      </button>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       ЕКРАН 0: ГОЛОВНА ОГЛЯДОВА СТОРІНКА-БРИФІНГ (EDITORIAL BENTO HUB)
+       ========================================================================= -->
+  <main class="screen active" id="screen-hub">
+    <div class="hub-wrap">
+      <!-- Верхній Bento-рядок: Головний тезіс + Шкала точності та ефективності -->
+      <div class="hub-hero-grid">
+        <div class="hub-lead-card">
+          <div>
+            <span class="kicker mono">ОГЛЯДОВИЙ БРИФІНГ • МЕДИЧНА РОБОТОТЕХНІКА</span>
+            <h1>Як інженерна точність змінює сучасну медицину</h1>
+            <p>
+              Роботизовані системи не замінюють лікаря, а багаторазово підсилюють його можливості: усувають мікротремор рук, забезпечують тривимірну навігацію всередині організму та допомагають пацієнтам швидше повертатися до активного життя.
+            </p>
+          </div>
+
+          <div class="hub-cta-row">
+            <button class="btn-portal" onclick="goNovelLobby()">
+              <span>Запустити інтерактивну візуальну новелу</span>
+              <span>→</span>
+            </button>
+            <button class="hud-pill" onclick="document.getElementById('portal-entry').scrollIntoView({behavior:'smooth'})">
+              Обрати клінічний сценарій ↓
+            </button>
+          </div>
+        </div>
+
+        <!-- Шкала точності та ефективності -->
+        <div class="scale-card">
+          <div class="scale-header">
+            <h2>Шкала точності та ефективності</h2>
+            <span class="mono" style="font-size:0.74rem; color:var(--accent);">КЛІНІЧНІ ДАНІ</span>
+          </div>
+
+          <div class="scale-row">
+            <div class="scale-labels">
+              <span>Рука хірурга (природний тремор ~0.1–0.5 мм)</span>
+              <span class="mono">Базовий рівень</span>
+            </div>
+            <div class="scale-track">
+              <div class="scale-fill" style="width: 34%; opacity: 0.65;"></div>
+            </div>
+          </div>
+
+          <div class="scale-row">
+            <div class="scale-labels">
+              <span>Маніпулятор da Vinci (фільтрація 10:1)</span>
+              <span class="mono" style="color:var(--accent);">до 0.01 мм</span>
+            </div>
+            <div class="scale-track">
+              <div class="scale-fill" style="width: 98%;"></div>
+            </div>
+          </div>
+
+          <div class="scale-kpi-strip">
+            <div class="kpi-mini">
+              <strong>0.01 мм</strong>
+              <span>точність ходу</span>
+            </div>
+            <div class="kpi-mini">
+              <strong>−65%</strong>
+              <span>крововтрата</span>
+            </div>
+            <div class="kpi-mini">
+              <strong>×2.5</strong>
+              <span>швидше відновлення</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 ключові напрями медичної робототехніки -->
+      <div class="directions-bento">
+        <div class="dir-tile">
+          <span class="dir-num">01 / МІКРОХІРУРГІЯ</span>
+          <h3>Малоінвазивні операції</h3>
+          <p>
+            Втручання через міжреберні чи черевні проколи діаметром до 8 мм під контролем об’ємної 3D-оптики без великих розрізів.
+          </p>
+        </div>
+
+        <div class="dir-tile">
+          <span class="dir-num">02 / НЕЙРОНАВІГАЦІЯ</span>
+          <h3>Стереотаксис мозку</h3>
+          <p>
+            Поєднання МРТ і КТ у 3D-карту для прокладання безпечного коридору до глибинних структур мозку з похибкою менше 0.5 мм.
+          </p>
+        </div>
+
+        <div class="dir-tile">
+          <span class="dir-num">03 / БІОНІКА</span>
+          <h3>Нейропротезування</h3>
+          <p>
+            Міоелектричні протези зчитують сигнали м’язів передпліччя та забезпечують десятки точних побутових захватів.
+          </p>
+        </div>
+
+        <div class="dir-tile">
+          <span class="dir-num">04 / РЕАБІЛІТАЦІЯ</span>
+          <h3>Адаптивні екзоскелети</h3>
+          <p>
+            Моторизовані ортези аналізують центр ваги 100 разів на секунду та формують правильний патерн ходьби після травм.
+          </p>
+        </div>
+      </div>
+
+      <!-- Стислий довідник 4 ключових інженерних систем -->
+      <div class="systems-strip">
+        <article class="sys-bento-card">
+          <img
+            src="https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=700&q=80"
+            onerror="this.src='https://placehold.co/600x300/161c24/10b981?text=da+Vinci+Xi'"
+            alt="Хірургічна система da Vinci Xi"
+          />
+          <div class="sys-bento-body">
+            <span class="mono">ХІРУРГІЧНА ПЛАТФОРМА</span>
+            <h3>da Vinci Xi</h3>
+            <p>Чотири маніпулятори EndoWrist із ротацією 540° та 10-кратним 3D-збільшенням операційного поля.</p>
+          </div>
+        </article>
+
+        <article class="sys-bento-card">
+          <img
+            src="https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&w=700&q=80"
+            onerror="this.src='https://placehold.co/600x300/161c24/38bdf8?text=ROSA+One+Brain'"
+            alt="Нейрохірургічний робот ROSA One Brain"
+          />
+          <div class="sys-bento-body">
+            <span class="mono">НЕЙРОХІРУРГІЯ</span>
+            <h3>ROSA One Brain</h3>
+            <p>Безконтактна лазерна реєстрація пацієнта та прецизійне наведення інструментів у нейрохірургії.</p>
+          </div>
+        </article>
+
+        <article class="sys-bento-card">
+          <img
+            src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=700&q=80"
+            onerror="this.src='https://placehold.co/600x300/161c24/10b981?text=EksoNR+Exoskeleton'"
+            alt="Реабілітаційний екзоскелет EksoNR"
+          />
+          <div class="sys-bento-body">
+            <span class="mono">НЕЙРОРЕАБІЛІТАЦІЯ</span>
+            <h3>EksoNR</h3>
+            <p>Клінічний екзоскелет для відновлення симетрії ходьби після інсультів та ушкоджень спинного мозку.</p>
+          </div>
+        </article>
+
+        <article class="sys-bento-card">
+          <img
+            src="https://images.unsplash.com/photo-1531746790731-6c087fecd65a?auto=format&fit=crop&w=700&q=80"
+            onerror="this.src='https://placehold.co/600x300/161c24/f59e0b?text=Esper+Bionics'"
+            alt="Біонічний протез кисті Esper Bionics"
+          />
+          <div class="sys-bento-body">
+            <span class="mono">БІОНІЧНА КИСТЬ</span>
+            <h3>Esper Bionics</h3>
+            <p>Інтелектуальний протез із самонавчанням на основі ЕМГ-сигналів м’язів та контролем сили хвату.</p>
+          </div>
+        </article>
+      </div>
+
+      <!-- Яскравий інтерактивний блок-портал входу в новелу -->
+      <section class="portal-banner" id="portal-entry">
+        <div class="portal-banner-head">
+          <div>
+            <span class="mono" style="font-size:0.74rem; color:var(--accent); font-weight:700;">ІНТЕРАКТИВНА ПРАКТИКА • 3 СЦЕНАРІЇ</span>
+            <h2>Випробуйте медичну робототехніку у візуальній новелі</h2>
+          </div>
+          <button class="btn-portal" onclick="goNovelLobby()">
+            <span>Відкрити лобі новели</span>
+            <span>→</span>
+          </button>
+        </div>
+
+        <div class="portal-quick-grid">
+          <button class="quick-scen-btn" onclick="startScenario('cardio')">
+            <div>
+              <span class="story-code mono">СЦЕНАРІЙ А • DA VINCI XI</span>
+              <strong>Операційна 04: Мікрохірургія серця</strong>
+              <span class="desc">Пластику мітрального клапана через проколи 8 мм зі стабілізацією рухів 10:1.</span>
+            </div>
+            <div class="quick-scen-go">
+              <span>Запустити сценарій (4 етапи)</span>
+              <span>→</span>
+            </div>
+          </button>
+
+          <button class="quick-scen-btn" onclick="startScenario('neuro')">
+            <div>
+              <span class="story-code mono">СЦЕНАРІЙ Б • ROSA ONE BRAIN</span>
+              <strong>Нейроцентр: Операція без права на похибку</strong>
+              <span class="desc">3D-планування МРТ/КТ, лазерна реєстрація та глибинна біопсія з точністю 0.3 мм.</span>
+            </div>
+            <div class="quick-scen-go">
+              <span>Запустити сценарій (4 етапи)</span>
+              <span>→</span>
+            </div>
+          </button>
+
+          <button class="quick-scen-btn" onclick="startScenario('rehab')">
+            <div>
+              <span class="story-code mono">СЦЕНАРІЙ В • EKSONR &amp; ESPER</span>
+              <strong>Крок за кроком: Повернення руху</strong>
+              <span class="desc">Відновлення ходьби в екзоскелеті та налаштування біонічної кисті пацієнта.</span>
+            </div>
+            <div class="quick-scen-go">
+              <span>Запустити сценарій (4 етапи)</span>
+              <span>→</span>
+            </div>
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div class="author-footer-bar">
+      <div class="author-signature">
+        <span class="rec-dot"></span>
+        Виконала студентка групи 1КН-26б Іллінська Ю. М.
+      </div>
+      <span class="mono" style="font-size:0.78rem; color:var(--muted);">
+        Оглядовий брифінг • Перейдіть до новели для інтерактивного проходження
+      </span>
+    </div>
+  </main>
+
+  <!-- =========================================================================
+       ЕКРАН 1: СТАРТОВИЙ ВИБІР ОДНІЄЇ З 3 КЛІНІЧНИХ ІСТОРІЙ НОВЕЛИ
+       ========================================================================= -->
+  <section class="screen" id="screen-start">
+    <div class="start-hero">
+      <span class="kicker mono">ІНТЕРАКТИВНА ВІЗУАЛЬНА НОВЕЛА • МЕДИЧНА РОБОТОТЕХНІКА</span>
+      <h1>Три клінічні історії, де точність робота вирішує все</h1>
+      <p>
+        Оберіть сценарій, станьте учасником реальної операції або нейрореабілітації, приймайте технічні рішення та спостерігайте, як працює сучасна медична робототехніка зсередини.
+      </p>
+    </div>
+
+    <div class="stories-row">
+      <!-- Сценарій А -->
+      <button class="story-choice" onclick="startScenario('cardio')">
+        <img
+          class="story-thumb"
+          src="https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=800&q=80"
+          onerror="this.src='https://placehold.co/600x300/161c24/10b981?text=da+Vinci+Xi'"
+          alt="Операційна 04: Мікрохірургія серця"
+        />
+        <div>
+          <span class="story-code mono">СЦЕНАРІЙ А • ХІРУРГІЯ</span>
+          <h3>Операційна 04: Мікрохірургія серця</h3>
+          <p>
+            Роль кардіохірурга за консоллю da Vinci Xi. Налаштуйте фільтрацію тремтіння 10:1, 3D-ендоскопію та проведіть пластику клапана через проколи 8 мм.
+          </p>
+        </div>
+        <div class="story-start-cta">
+          <span>Розпочати операцію (4 сцени)</span>
+          <span>→</span>
+        </div>
+      </button>
+
+      <!-- Сценарій Б -->
+      <button class="story-choice" onclick="startScenario('neuro')">
+        <img
+          class="story-thumb"
+          src="https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&w=800&q=80"
+          onerror="this.src='https://placehold.co/600x300/161c24/38bdf8?text=ROSA+One+Brain'"
+          alt="Нейроцентр: Операція без права на похибку"
+        />
+        <div>
+          <span class="story-code mono">СЦЕНАРІЙ Б • НЕЙРОХІРУРГІЯ</span>
+          <h3>Нейроцентр: Операція без права на похибку</h3>
+          <p>
+            Роль нейрохірурга з роботом-навігатором ROSA One Brain. Поєднайте дані МРТ/КТ, оберіть безпечну траєкторію та виконайте глибинну біопсію мозку.
+          </p>
+        </div>
+        <div class="story-start-cta">
+          <span>Увійти в нейроцентр (4 сцени)</span>
+          <span>→</span>
+        </div>
+      </button>
+
+      <!-- Сценарій В -->
+      <button class="story-choice" onclick="startScenario('rehab')">
+        <img
+          class="story-thumb"
+          src="https://images.unsplash.com/photo-1531746790731-6c087fecd65a?auto=format&fit=crop&w=800&q=80"
+          onerror="this.src='https://placehold.co/600x300/161c24/f59e0b?text=EksoNR+and+Esper+Bionics'"
+          alt="Крок за кроком: Повернення руху"
+        />
+        <div>
+          <span class="story-code mono">СЦЕНАРІЙ В • РЕАБІЛІТАЦІЯ ТА БІОНІКА</span>
+          <h3>Крок за кроком: Повернення руху</h3>
+          <p>
+            Історія відновлення пацієнта після травми за допомогою клінічного екзоскелета EksoNR та біонічного нейропротеза кисті Esper Bionics.
+          </p>
+        </div>
+        <div class="story-start-cta">
+          <span>Розпочати реабілітацію (4 сцени)</span>
+          <span>→</span>
+        </div>
+      </button>
+    </div>
+
+    <div class="author-footer-bar">
+      <div class="author-signature">
+        <span class="rec-dot"></span>
+        Виконала студентка групи 1КН-26б Іллінська Ю. М.
+      </div>
+      <button class="hud-pill" onclick="goHub()">← Повернутися до огляду теми</button>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       ЕКРАН 2: ІГРОВИЙ КАДР ВІЗУАЛЬНОЇ НОВЕЛИ
+       ========================================================================= -->
+  <section class="screen" id="screen-stage">
+    <div class="vn-stage-grid">
+      <!-- Ліва панель: Жива телеметрія пацієнта та наукова довідка -->
+      <aside class="telemetry-panel">
+        <div class="tel-header mono">
+          <span>МОНІТОР ПАЦІЄНТА</span>
+          <span style="color:var(--accent);">● LIVE</span>
+        </div>
+
+        <div class="tel-metric">
+          <span id="tel-1-label">Пульс пацієнта</span>
+          <strong id="tel-1-val">68 уд/хв</strong>
+        </div>
+
+        <div class="tel-metric">
+          <span id="tel-2-label">Точність маніпулятора</span>
+          <strong id="tel-2-val">0.01 мм</strong>
+        </div>
+
+        <div class="tel-metric">
+          <span id="tel-3-label">Стан відновлення / втрати</span>
+          <strong id="tel-3-val">Крововтрата: мінімальна</strong>
+        </div>
+
+        <div class="science-note-box">
+          <strong>Як працює технологія</strong>
+          <div id="science-note-text">
+            Стереоскопічний 3D-ендоскоп передає об’ємне зображення у 10-кратному збільшенні без затримки.
+          </div>
+        </div>
+      </aside>
+
+      <!-- Права нижня панель: Діалогове вікно та вибір дій -->
+      <div class="dialogue-box">
+        <div class="speaker-row">
+          <span class="speaker-tag" id="speaker-name">Кардіохірург • Консоль da Vinci Xi</span>
+          <span class="scene-location mono" id="scene-loc">Операційна 04 • Етап підготовки</span>
+        </div>
+
+        <div class="consequence-banner" id="consequence-box"></div>
+
+        <div class="dialogue-text" id="dialogue-text" onclick="finishTypewriter()" title="Клікніть, щоб показати весь текст одразу"></div>
+
+        <div class="choices-list" id="choices-container"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       ЕКРАН 3: ПІДСУМКОВА КАРТКА РЕЗУЛЬТАТІВ СЦЕНАРІЮ
+       ========================================================================= -->
+  <section class="screen" id="screen-summary">
+    <div class="summary-wrap">
+      <div>
+        <span class="kicker mono" id="sum-badge">СЦЕНАРІЙ ЗАВЕРШЕНО УСПІШНО</span>
+        <h2 id="sum-title" style="font-size:1.85rem; margin-bottom:10px;">Підсумки клінічного протоколу</h2>
+        <p id="sum-desc" style="color:var(--muted); font-size:0.96rem; line-height:1.65;"></p>
+      </div>
+
+      <div class="summary-stats">
+        <div class="sum-box">
+          <span id="sum-l1">Досягнута точність</span>
+          <strong id="sum-v1">0.01 мм</strong>
+        </div>
+        <div class="sum-box">
+          <span id="sum-l2">Прогноз реабілітації</span>
+          <strong id="sum-v2">3–4 дні</strong>
+        </div>
+        <div class="sum-box">
+          <span id="sum-l3">Ефективність технології</span>
+          <strong id="sum-v3">98%</strong>
+        </div>
+      </div>
+
+      <div class="science-note-box">
+        <strong>Науковий висновок про застосовану робототехніку</strong>
+        <div id="sum-conclusion"></div>
+      </div>
+
+      <div class="summary-actions">
+        <div class="author-signature">
+          <span class="rec-dot"></span>
+          Виконала студентка групи 1КН-26б Іллінська Ю. М.
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="hud-pill" onclick="goHub()">← На головну</button>
+          <button class="hud-pill" onclick="toggleSources(true)">📚 Наукові джерела</button>
+          <button class="btn-primary" onclick="goNovelLobby()">Пройти іншу історію →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       МОДАЛЬНЕ ВІКНО НАУКОВИХ ДЖЕРЕЛ
+       ========================================================================= -->
+  <div class="modal-overlay" id="sources-modal" onclick="if(event.target.id==='sources-modal') toggleSources(false)">
+    <div class="modal-box">
+      <h3>Використані наукові та клінічні джерела</h3>
+      <ul>
+        <li>
+          <strong class="mono">01. Intuitive Surgical</strong> —
+          <a href="https://www.intuitive.com/" target="_blank" rel="noopener">Технічна документація хірургічної системи da Vinci Xi та інструментів EndoWrist</a>
+        </li>
+        <li>
+          <strong class="mono">02. IEEE Robotics &amp; Automation Society</strong> —
+          <a href="https://www.ieee-ras.org/" target="_blank" rel="noopener">Дослідження клінічних екзоскелетів EksoNR та систем нейрореабілітації</a>
+        </li>
+        <li>
+          <strong class="mono">03. Nature Biomedical Engineering</strong> —
+          <a href="https://www.nature.com/natbiomedeng/" target="_blank" rel="noopener">Публікації з нейронавігації ROSA One Brain та біонічних нейропротезів</a>
+        </li>
+        <li>
+          <strong class="mono">04. World Health Organization (WHO)</strong> —
+          <a href="https://www.who.int/health-topics/digital-health" target="_blank" rel="noopener">Глобальна стратегія впровадження цифрових та роботизованих технологій в охороні здоров’я</a>
+        </li>
+      </ul>
+      <button class="btn-primary" onclick="toggleSources(false)">Закрити вікно</button>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       1. СЮЖЕТНІ ДАНІ ДЛЯ 3 ПОВНОЦІННИХ КЛІНІЧНИХ СЦЕНАРІЇВ
+       ========================================================================= */
+    const scenarios = {
+      cardio: {
+        title: 'Операційна 04: Мікрохірургія серця',
+        summaryBadge: 'СЦЕНАРІЙ А ЗАВЕРШЕНО • КАРДІОХІРУРГІЯ DA VINCI XI',
+        summaryTitle: 'Пластику мітрального клапана виконано без розрізу грудної клітки',
+        summaryDesc:
+          'Завдяки малоінвазивному доступу через міжреберні порти діаметром 8 мм та електронній стабілізації маніпуляторів серце пацієнта відновило нормальний кровотік із мінімальною травматизацією тканин.',
+        summaryStats: [
+          ['Точність накладання швів', 'до 0.01 мм'],
+          ['Виписка зі стаціонару', 'через 4 дні'],
+          ['Збереження об’єму крові', '−65% втрат']
+        ],
+        summaryConclusion:
+          'Хірургічний робот da Vinci Xi не діє автономно — він працює як інтелектуальний продовжувач рук лікаря, усуваючи фізіологічний тремор та надаючи 7 ступенів свободи інструментам у тісному просторі грудної порожнини.',
+        scenes: [
+          {
+            loc: 'Операційна 04 • Етап 1/5 • Консоль хірурга',
+            speaker: 'Кардіохірург (від першої особи)',
+            img: 'https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=1500&q=85',
+            telemetry: [
+              ['Пульс пацієнта', '72 уд/хв'],
+              ['Калібрування портів', '4 порти по 8 мм'],
+              ['Крововтрата', '15 мл (норма)']
+            ],
+            science:
+              'Робот da Vinci Xi вводить інструменти через троакари діаметром 8 мм, зберігаючи цілісність грудини та ребер пацієнта.',
+            text:
+              'Я сідаю за ергономічну консоль управління за два метри від операційного столу. Пацієнту 46 років, потрібна реконструкція мітрального клапана серця. Переді мною — об’ємний 3D-екран. Яке масштабування рухів маніпуляторів обрати перед початком роботи?',
+            choices: [
+              {
+                label: 'Масштаб 10:1 (рух руки 5 см = 5 мм кінчика інструмента)',
+                consequence:
+                  'Оптимальний вибір для мікрохірургії: система відфільтрувала навіть найменший пульсовий тремор пальців, забезпечивши ювелірний контроль.',
+                next: 1
+              },
+              {
+                label: 'Масштаб 5:1 (швидше переміщення на етапі огляду порожнини)',
+                consequence:
+                  'Огляд виконано швидко, а перед накладанням швів система автоматично запропонувала перейти на точний режим 10:1.',
+                next: 1
+              }
+            ]
+          },
+          {
+            loc: 'Операційна 04 • Етап 2/5 • 3D-ендоскопія',
+            speaker: 'Кардіохірург • Візуалізація',
+            img: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=1500&q=85',
+            telemetry: [
+              ['Пульс пацієнта', '64 уд/хв (підтримка)'],
+              ['Оптичне збільшення', '10× Full-HD 3D'],
+              ['Крововтрата', '35 мл']
+            ],
+            science:
+              'Технологія Firefly використовує інфрачервоне підсвічування для миттєвої візуалізації кровотоку у коронарних судинах.',
+            text:
+              'Стереоендоскоп передає об’ємну картинку стулок клапана у 10-кратному збільшенні. Поруч проходить важлива гілка коронарної артерії. Як переконатися у безпечній межі розрізу?',
+            choices: [
+              {
+                label: 'Увімкнути флуоресцентну візуалізацію судин Firefly',
+                consequence:
+                  'Судини підсвітилися смарагдовим контуром у реальному часі — ризик випадкового пошкодження артерії повністю виключено.',
+                next: 2
+              },
+              {
+                label: 'Звірити 3D-ендоскоп із передопераційною КТ-моделлю серця',
+                consequence:
+                  'Накладання КТ-реконструкції підтвердило анатомічні орієнтири та безпечну зону доступу до клапана.',
+                next: 2
+              }
+            ]
+          },
+          {
+            loc: 'Операційна 04 • Етап 3/5 • Реконструкція стулки',
+            speaker: 'Кардіохірург • Маніпулятори EndoWrist',
+            img: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1500&q=85',
+            telemetry: [
+              ['Пульс пацієнта', '62 уд/хв'],
+              ['Ротація інструмента', '540° (7 ступенів свободи)'],
+              ['Крововтрата', '65 мл']
+            ],
+            science:
+              'Мікрошарніри EndoWrist на кінчиках інструментів згинаються під кутами, недоступними для людського зап’ястя.',
+            text:
+              'Пошкоджену ділянку стулки потрібно зафіксувати опорним кільцем під складним зворотним кутом. Звичайний лапароскопічний інструмент тут безсилий, але в моїх руках — артикуляційні голкотримачі EndoWrist.',
+            choices: [
+              {
+                label: 'Використати ротацію 540° для безперервного мікрошва',
+                consequence:
+                  'Інструмент плавно обійшов контур клапана без перехоплення голки, скоротивши час операції на 18 хвилин.',
+                next: 3
+              },
+              {
+                label: 'Накласти серію окремих вузлових швів із контролем натягу',
+                consequence:
+                  'Кожен вузол затягнуто з однаковим дозованим зусиллям без прорізування делікатної тканини клапана.',
+                next: 3
+              }
+            ]
+          },
+          {
+            loc: 'Операційна 04 • Етап 4/5 • Перевірка герметичності',
+            speaker: 'Кардіохірург та Анестезіолог',
+            img: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=1500&q=85',
+            telemetry: [
+              ['Пульс пацієнта', '70 уд/хв (відновлено)'],
+              ['Герметичність клапана', '99.4%'],
+              ['Загальна крововтрата', '95 мл (замість 400 мл)']
+            ],
+            science:
+              'Інтраопераційна ехокардіографія підтверджує відновлення ламінарного потоку крові одразу після зняття затискачів.',
+            text:
+              'Серце запускається у власному ритмі. На моніторі ультразвуку видно, як оновлений клапан щільно змикається з кожним ударом. Залишилося завершити операцію та перевести пацієнта у палату інтенсивного нагляду.',
+            choices: [
+              {
+                label: 'Завершити протокол і сформувати звіт операції',
+                consequence:
+                  'Роботизовані маніпулятори виведено, на чотири мікропроколи накладено косметичні шви.',
+                next: 'summary'
+              }
+            ]
+          }
+        ]
+      },
+
+      neuro: {
+        title: 'Нейроцентр: Операція без права на похибку',
+        summaryBadge: 'СЦЕНАРІЙ Б ЗАВЕРШЕНО • НЕЙРОХІРУРГІЯ ROSA ONE BRAIN',
+        summaryTitle: 'Глибинна біопсія мозку виконана з точністю 0.3 мм',
+        summaryDesc:
+          'Роботизована стереотаксична система ROSA One Brain дозволила дістатися глибокої структури мозку через мікроотвір діаметром 3 мм, повністю оминувши магістральні судини та рухові центри кори.',
+        summaryStats: [
+          ['Похибка навігації', 'лише 0.3 мм'],
+          ['Діаметр доступу', '3.2 мм'],
+          ['Відновлення свідомості', 'через 2 години']
+        ],
+        summaryConclusion:
+          'У нейрохірургії поєднання тривимірної нейровізуалізації (МРТ/КТ) та роботизованого позиціонування перетворює надскладні втручання на прогнозовані, малотравматичні процедури.',
+        scenes: [
+          {
+            loc: 'Нейроцентр • Етап 1/4 • 3D-планування траєкторії',
+            speaker: 'Нейрохірург (від першої особи)',
+            img: 'https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&w=1500&q=85',
+            telemetry: [
+              ['Пульс пацієнта', '66 уд/хв'],
+              ['Точність 3D-карти', '0.3 мм'],
+              ['Відстань до судин', 'безпечний коридор 4.8 мм']
+            ],
+            science:
+              'Програмний модуль ROSA поєднує знімки МРТ із контрастом та КТ кісток черепа в єдину тривимірну навігаційну систему.',
+            text:
+              'На екрані планувальної станції — 3D-модель мозку пацієнта. У глибині скроневої частки виявлено новоутворення, для точного лікування якого необхідна стереотаксична біопсія. Як прокладемо маршрут голки?',
+            choices: [
+              {
+                label: 'Побудувати траєкторію в обхід усіх судин із запасом 4.8 мм',
+                consequence:
+                  'Алгоритм підтвердив коридор безпеки: жодна судина чи провідний нервовий тракт не перетинають вісь інструмента.',
+                next: 1
+              },
+              {
+                label: 'Задати найкоротший прямий шлях із додатковим судинним фільтром',
+                consequence:
+                  'Система автоматично скоригувала кут входу на 6°, щоб обійти поверхневу вену кори.',
+                next: 1
+              }
+            ]
+          },
+          {
+            loc: 'Нейроцентр • Етап 2/4 • Лазерна реєстрація пацієнта',
+            speaker: 'Нейрохірург • Сенсорний модуль ROSA',
+            img: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1500&q=85',
+            telemetry: [
+              ['Пульс пацієнта', '64 уд/хв'],
+              ['Лазерне сканування', '12 000 контрольних точок'],
+              ['Відхилення осей', '0.00°']
+            ],
+            science:
+              'Безконтактний лазерний далекомір на руці робота зчитує рельєф обличчя пацієнта і прив’язує його до 3D-моделі МРТ без інвазивних міток.',
+            text:
+              'Роботизований маніпулятор із шістьма ступенями свободи плавно підводиться до операційного столу. Потрібно синхронізувати реальне положення голови пацієнта з віртуальною 3D-моделлю.',
+            choices: [
+              {
+                label: 'Запустити безконтактне оптико-лазерне сканування рельєфу',
+                consequence:
+                  'За 18 секунд лазер зіставив 12 000 точок із МРТ-моделлю — робот зафіксував точну систему координат.',
+                next: 2
+              },
+              {
+                label: 'Провести подвійну верифікацію за кістковими орієнтирами',
+                consequence:
+                  'Перевірка підтвердила збіг координат до десятих часток міліметра.',
+                next: 2
+              }
+            ]
+          },
+          {
+            loc: 'Нейроцентр • Етап 3/4 • Забір мікрозразка',
+            speaker: 'Нейрохірург • Стереотаксична напрямна',
+            img: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1500&q=85',
+            telemetry: [
+              ['Пульс пацієнта', '65 уд/хв'],
+              ['Глибина занурення', '42.4 мм (ціль досягнута)'],
+              ['Крововтрата', '< 5 мл']
+            ],
+            science:
+              'Робот жорстко утримує напрямну втулку на заданій осі, не дозволяючи інструменту зміститися навіть на частку міліметра.',
+            text:
+              'Маніпулятор ROSA виставив напрямну втулку точно по осі траєкторії та заблокував усі суглоби. Через мікроотвір діаметром 3.2 мм я вводжу біопсійну канюлю на задану глибину 42.4 мм.',
+            choices: [
+              {
+                label: 'Виконати делікатний забір зразка з контролем тиску',
+                consequence:
+                  'Зразок тканини отримано з першої спроби без пошкодження навколишніх нейронів.',
+                next: 3
+              }
+            ]
+          },
+          {
+            loc: 'Нейроцентр • Етап 4/4 • Завершення процедури',
+            speaker: 'Нейрохірург',
+            img: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=1500&q=85',
+            telemetry: [
+              ['Пульс пацієнта', '68 уд/хв'],
+              ['Неврологічний статус', '100% збережено'],
+              ['Тривалість процедури', '38 хвилин']
+            ],
+            science:
+              'Малоінвазивна роботизована біопсія скорочує час операції більш ніж удвічі порівняно з ручними рамковими системами.',
+            text:
+              'Інструмент виведено, контрольний скан підтверджує відсутність ускладнень. Уже через дві години пацієнт зможе спілкуватися з рідними та отримає персоналізований план терапії.',
+            choices: [
+              {
+                label: 'Переглянути підсумкову картку нейрооперації',
+                consequence: 'Дані телеметрії та звіт операції збережено.',
+                next: 'summary'
+              }
+            ]
+          }
+        ]
+      },
+
+      rehab: {
+        title: 'Крок за кроком: Повернення руху',
+        summaryBadge: 'СЦЕНАРІЙ В ЗАВЕРШЕНО • EKSONR + ESPER BIONICS',
+        summaryTitle: 'Відновлено симетрію ходьби та інтуїтивне керування кистю',
+        summaryDesc:
+          'Поєднання роботизованого екзоскелета EksoNR для відновлення патерну ходьби та біонічного протеза Esper Bionics з нейронним навчанням повернуло пацієнту самостійність у повсякденних діях.',
+        summaryStats: [
+          ['Кроків за тренування', '640 точних кроків'],
+          ['Швидкість відгуку протеза', '15 мілісекунд'],
+          ['Прогрес мобільності', '+84% за курс']
+        ],
+        summaryConclusion:
+          'Реабілітаційна робототехніка активує нейропластичність мозку: тисячі фізіологічно правильних рухів допомагають нервовій системі будувати нові нейронні зв’язки.',
+        scenes: [
+          {
+            loc: 'Центр нейрореабілітації • Етап 1/4 • Екзоскелет EksoNR',
+            speaker: 'Пацієнт (від першої особи)',
+            img: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=1500&q=85',
+            telemetry: [
+              ['Пульс під час навантаження', '92 уд/хв'],
+              ['Підтримка приводів EksoNR', '70% адаптивна'],
+              ['Симетрія кроку', '86%']
+            ],
+            science:
+              'Екзоскелет EksoNR зчитує зміщення центру ваги людини 100 разів на секунду та вмикає електроприводи лише тоді, коли пацієнт сам ініціює крок.',
+            text:
+              'Після важкої травми кожен самостійний крок здавався неможливим. Сьогодні реабілітолог фіксує на мені легкий моторизований екзоскелет EksoNR. Який режим підтримки оберемо для першої сесії?',
+            choices: [
+              {
+                label: 'Адаптивний режим (робот допомагає рівно настільки, скільки бракує сил)',
+                consequence:
+                  'Мої власні м’язи активно включилися в роботу, а екзоскелет м’яко вирівняв траєкторію коліна та стопи.',
+                next: 1
+              },
+              {
+                label: 'Режим навчання балансу з поступовим перенесенням ваги',
+                consequence:
+                  'Вібросигнали датчиків підказали правильне положення корпусу, і я впевнено зробив перші 50 кроків.',
+                next: 1
+              }
+            ]
+          },
+          {
+            loc: 'Лабораторія біоніки • Етап 2/4 • Калібрування Esper Bionics',
+            speaker: 'Біоінженер та Пацієнт',
+            img: 'https://images.unsplash.com/photo-1531746790731-6c087fecd65a?auto=format&fit=crop&w=1500&q=85',
+            telemetry: [
+              ['Чутливість ЕМГ-сенсорів', '98% розпізнавання'],
+              ['Затримка сигналу', '15 мс'],
+              ['Активні захвати', '24 режими']
+            ],
+            science:
+              'Неінвазивні електроміографічні (ЕМГ) датчики в гільзі протеза вловлюють мікроімпульси м’язів передпліччя без хірургічного втручання.',
+            text:
+              'Наступний етап — налаштування біонічної кисті Esper Bionics. Сенсори прилягають до шкіри передпліччя і зчитують електричні імпульси, коли я уявляю стискання або розтискання пальців. Як налаштуємо чутливість?',
+            choices: [
+              {
+                label: 'Увімкнути самонавчання ШІ під мої індивідуальні м’язові сигнали',
+                consequence:
+                  'За 3 хвилини алгоритм розпізнав патерни для точного щипка, циліндричного хвату та роботи з клавіатурою.',
+                next: 2
+              },
+              {
+                label: 'Налаштувати плавний пропорційний контроль сили стискання',
+                consequence:
+                  'Чим сильніше напруження м’язів, тим швидше і щільніше сходяться пальці протеза.',
+                next: 2
+              }
+            ]
+          },
+          {
+            loc: 'Тренажерна зала • Етап 3/4 • Побутовий тест точності',
+            speaker: 'Пацієнт (від першої особи)',
+            img: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1500&q=85',
+            telemetry: [
+              ['Пульс', '78 уд/хв'],
+              ['Контроль зусилля пальців', 'дозований 1.2 Н'],
+              ['Успішність тесту', '100%']
+            ],
+            science:
+              'Багатоосьові мікромотори в кожному пальці розподіляють тиск по поверхні предмета, запобігаючи вислизанню або роздавлюванню.',
+            text:
+              'Перевіряємо біонічну кисть у реальній дії: на столі стоїть тонка паперова склянка з водою. Потрібно підняти її, не зім’явши стінки, і поставити на полицю.',
+            choices: [
+              {
+                label: 'Активувати делікатний хват трьома пальцями',
+                consequence:
+                  'Протез плавно обхопив склянку з мінімальним тиском — жодної краплі не пролито!',
+                next: 3
+              }
+            ]
+          },
+          {
+            loc: 'Центр нейрореабілітації • Етап 4/4 • Фінал курсу',
+            speaker: 'Реабілітолог та Пацієнт',
+            img: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=1500&q=85',
+            telemetry: [
+              ['Пройдено за курс', '14 800 кроків'],
+              ['Симетрія ходи', '94%'],
+              ['Самостійність у побуті', 'відновлено']
+            ],
+            science:
+              'Поєднання роботизованої механіки та зворотного зв’язку прискорює відновлення рухових функцій у 2.5–3 рази.',
+            text:
+              'Після чотирьох тижнів занять я впевнено крокую коридором і вільно користуюсь біонічною рукою у повсякденних справах. Технології повернули мені свободу руху.',
+            choices: [
+              {
+                label: 'Переглянути підсумкову картку реабілітації',
+                consequence: 'Прогрес зафіксовано в електронній картці пацієнта.',
+                next: 'summary'
+              }
+            ]
+          }
+        ]
+      }
+    };
+
+    /* =========================================================================
+       2. СТАН ВІЗУАЛЬНОЇ НОВЕЛИ ТА ЕФЕКТ ПОСТУПОВОЇ ПОЯВИ ТЕКСТУ (TYPEWRITER)
+       ========================================================================= */
+    let currentScenarioKey = null;
+    let currentSceneIdx = 0;
+    let typingTimer = null;
+    let fullCurrentText = '';
+    let isTyping = false;
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const btn = document.getElementById('theme-toggle-btn');
+      if (html.getAttribute('data-theme') === 'graphite') {
+        html.setAttribute('data-theme', 'paper');
+        btn.textContent = '🎨 Палітра: Теплий папір';
+      } else {
+        html.setAttribute('data-theme', 'graphite');
+        btn.textContent = '🎨 Палітра: Клінічний графіт';
+      }
+    }
+
+    function toggleSources(show) {
+      const modal = document.getElementById('sources-modal');
+      if (typeof show === 'boolean') {
+        modal.classList.toggle('open', show);
+      } else {
+        modal.classList.toggle('open');
+      }
+    }
+
+    function showScreen(screenId, lockViewport) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+      document.body.classList.toggle('vn-lock', Boolean(lockViewport));
+      document.getElementById('back-hub-btn').classList.toggle('visible', screenId !== 'screen-hub');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function goHub() {
+      clearInterval(typingTimer);
+      document.getElementById('progress-wrap').classList.remove('visible');
+      document.getElementById('backdrop-img').src =
+        'https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=1500&q=85';
+      showScreen('screen-hub', false);
+    }
+
+    function goNovelLobby() {
+      clearInterval(typingTimer);
+      document.getElementById('progress-wrap').classList.remove('visible');
+      document.getElementById('backdrop-img').src =
+        'https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=1500&q=85';
+      showScreen('screen-start', true);
+    }
+
+    function startScenario(key) {
+      currentScenarioKey = key;
+      currentSceneIdx = 0;
+      document.getElementById('consequence-box').classList.remove('visible');
+      document.getElementById('progress-wrap').classList.add('visible');
+      showScreen('screen-stage', true);
+      renderScene();
+    }
+
+    function renderProgressDots(total, activeIdx) {
+      document.getElementById('step-counter').textContent = `КАДР ${activeIdx + 1} / ${total}`;
+      const dotsWrap = document.getElementById('step-dots');
+      dotsWrap.innerHTML = '';
+      for (let i = 0; i < total; i++) {
+        const dot = document.createElement('span');
+        dot.className = 'step-dot';
+        if (i < activeIdx) dot.classList.add('done');
+        if (i === activeIdx) dot.classList.add('current');
+        dotsWrap.appendChild(dot);
+      }
+    }
+
+    function typeWriter(text) {
+      clearInterval(typingTimer);
+      fullCurrentText = text;
+      isTyping = true;
+      const target = document.getElementById('dialogue-text');
+      target.textContent = '';
+      let idx = 0;
+      typingTimer = setInterval(() => {
+        target.textContent += text.charAt(idx);
+        idx++;
+        if (idx >= text.length) {
+          clearInterval(typingTimer);
+          isTyping = false;
+        }
+      }, 16);
+    }
+
+    function finishTypewriter() {
+      if (!isTyping) return;
+      clearInterval(typingTimer);
+      document.getElementById('dialogue-text').textContent = fullCurrentText;
+      isTyping = false;
+    }
+
+    function renderScene() {
+      const scenario = scenarios[currentScenarioKey];
+      const scene = scenario.scenes[currentSceneIdx];
+
+      renderProgressDots(scenario.scenes.length, currentSceneIdx);
+
+      // Оновлюємо фоновий кадр
+      document.getElementById('backdrop-img').src = scene.img;
+
+      // Оновлюємо монітор телеметрії та наукову довідку
+      document.getElementById('tel-1-label').textContent = scene.telemetry[0][0];
+      document.getElementById('tel-1-val').textContent = scene.telemetry[0][1];
+      document.getElementById('tel-2-label').textContent = scene.telemetry[1][0];
+      document.getElementById('tel-2-val').textContent = scene.telemetry[1][1];
+      document.getElementById('tel-3-label').textContent = scene.telemetry[2][0];
+      document.getElementById('tel-3-val').textContent = scene.telemetry[2][1];
+      document.getElementById('science-note-text').textContent = scene.science;
+
+      // Оновлюємо спікера, локацію та текст
+      document.getElementById('speaker-name').textContent = scene.speaker;
+      document.getElementById('scene-loc').textContent = scene.loc;
+      typeWriter(scene.text);
+
+      // Генеруємо кнопки вибору дій
+      const choicesWrap = document.getElementById('choices-container');
+      choicesWrap.innerHTML = '';
+      scene.choices.forEach((choice, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.innerHTML = `<span class="choice-key">${idx + 1}</span><span>${choice.label}</span>`;
+        btn.onclick = () => handleChoice(choice);
+        choicesWrap.appendChild(btn);
+      });
+    }
+
+    function handleChoice(choice) {
+      const box = document.getElementById('consequence-box');
+      if (choice.consequence) {
+        box.textContent = 'Результат дії: ' + choice.consequence;
+        box.classList.add('visible');
+      } else {
+        box.classList.remove('visible');
+      }
+
+      if (choice.next === 'summary') {
+        renderSummary();
+      } else {
+        currentSceneIdx = choice.next;
+        renderScene();
+      }
+    }
+
+    function renderSummary() {
+      clearInterval(typingTimer);
+      document.getElementById('progress-wrap').classList.remove('visible');
+      const scenario = scenarios[currentScenarioKey];
+
+      document.getElementById('sum-badge').textContent = scenario.summaryBadge;
+      document.getElementById('sum-title').textContent = scenario.summaryTitle;
+      document.getElementById('sum-desc').textContent = scenario.summaryDesc;
+
+      document.getElementById('sum-l1').textContent = scenario.summaryStats[0][0];
+      document.getElementById('sum-v1').textContent = scenario.summaryStats[0][1];
+      document.getElementById('sum-l2').textContent = scenario.summaryStats[1][0];
+      document.getElementById('sum-v2').textContent = scenario.summaryStats[1][1];
+      document.getElementById('sum-l3').textContent = scenario.summaryStats[2][0];
+      document.getElementById('sum-v3').textContent = scenario.summaryStats[2][1];
+
+      document.getElementById('sum-conclusion').textContent = scenario.summaryConclusion;
+
+      showScreen('screen-summary', true);
+    }
+
+    // Закриття модального вікна джерел клавішею ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') toggleSources(false);
+    });
+  </script>
+</body>
+</html>
